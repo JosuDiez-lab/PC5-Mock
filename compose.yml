@@ -1,0 +1,51 @@
+services:
+  pc5-sim:
+    build:
+      context: ./pc5-sim
+    container_name: prose-pc5-sim
+    networks:
+      pc5:
+        ipv4_address: 10.50.0.20
+
+  ue-a:
+    build:
+      context: ./ue-a
+    container_name: prose-ue-a
+    environment:
+      UE_NAME: ue-a
+      PC5_SIM_HOST: pc5-sim
+      PC5_SIM_PORT: "8810"
+      EXTERNAL_PORT: "8809"
+      IP_TTL: "255"
+    ports:
+      - "18809:8809/udp"
+    depends_on:
+      - pc5-sim
+    networks:
+      pc5:
+        ipv4_address: 10.50.0.10
+
+  ue-b:
+    build:
+      context: ./ue-b
+    container_name: prose-ue-b
+    environment:
+      UE_NAME: ue-b
+      PC5_SIM_HOST: pc5-sim
+      PC5_SIM_PORT: "8810"
+      EXTERNAL_PORT: "8809"
+      IP_TTL: "255"
+    ports:
+      - "28809:8809/udp"
+    depends_on:
+      - pc5-sim
+    networks:
+      pc5:
+        ipv4_address: 10.50.0.11
+
+networks:
+  pc5:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.50.0.0/24

@@ -1,0 +1,10 @@
+{
+  "ue-a": {
+    "host_port": 18809,
+    "monp_port": 8809
+  },
+  "ue-b": {
+    "host_port": 28809,
+    "monp_port": 8809
+  }
+}

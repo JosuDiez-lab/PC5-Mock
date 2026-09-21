@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT="/home/josu/Projects/TFG/prose-pc5-mock"
+
+cd "$ROOT"
+
+usage() {
+    echo "Usage:"
+    echo "  pc5-mock start"
+    echo "  pc5-mock stop"
+    echo "  pc5-mock restart"
+    echo "  pc5-mock status"
+    echo "  pc5-mock logs"
+    echo "  pc5-mock send <source> <destination> <message>"
+}
+
+
+case "${1:-}" in
+
+    start)
+        podman compose up -d --build
+        ;;
+
+    stop)
+        podman compose down
+        ;;
+
+    restart)
+        podman compose down
+        podman compose up -d --build
+        ;;
+
+    status)
+        podman compose ps
+        ;;
+
+    logs)
+        podman compose logs -f --tail=100
+        ;;
+
+    send)
+
+        SOURCE="${2:-}"
+        DESTINATION="${3:-}"
+        MESSAGE="${4:-}"
+
+        if [[ -z "$SOURCE" || -z "$DESTINATION" || -z "$MESSAGE" ]]; then
+            usage
+            exit 1
+        fi
+
+        if [[ "$SOURCE" == "$DESTINATION" ]]; then
+            echo "source and destination must be different"
+            exit 1
+        fi
+
+        case "$SOURCE" in
+
+            ue-a)
+                CONTAINER="prose-ue-a"
+                ;;
+
+            ue-b)
+                CONTAINER="prose-ue-b"
+                ;;
+
+            *)
+                echo "Unknown UE: $SOURCE"
+                exit 1
+                ;;
+        esac
+
+        podman exec \
+            "$CONTAINER" \
+            python -c "
+import socket
+
+s = socket.socket(
+    socket.AF_INET,
+    socket.SOCK_DGRAM
+)
+
+s.setsockopt(
+    socket.IPPROTO_IP,
+    socket.IP_TTL,
+    255
+)
+
+payload = b'DATA\\0${SOURCE}\\0${MESSAGE}'
+
+s.sendto(
+    payload,
+    ('pc5-sim', 8810)
+)
+
+print(
+    '${SOURCE} -> ${DESTINATION}: ${MESSAGE}'
+)
+"
+        ;;
+
+    *)
+        usage
+        exit 1
+        ;;
+
+esac
